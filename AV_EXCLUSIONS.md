@@ -66,7 +66,9 @@ Apply all of the following on every Windows endpoint that will receive the Inven
 
 | Process | Purpose |
 |---|---|
-| `C:\ProgramData\InvenzoAgent\invenzo-agent.exe` | The agent service binary (runs continuously as `LocalSystem`) |
+| `C:\ProgramData\InvenzoAgent\invenzo-agent.exe` | The agent service binary after install (standard + sessionhost both end up here) |
+| `C:\ProgramData\InvenzoAgent\invenzo-agent-windows-amd64.exe` | **Standard agent** staging path during push-deploy — covers the brief window before the wire-filename binary is renamed |
+| `C:\ProgramData\InvenzoAgent\invenzo-agent-sessionhost-windows-amd64.exe` | **Session Host agent** staging path during push-deploy to VDI hosts (vSpace / RDS / Citrix / Horizon) |
 | `C:\ProgramData\InvenzoAgent\install.bat` | First-time install orchestrator (run once per endpoint) |
 | `C:\ProgramData\InvenzoAgent\uninstall.bat` | Uninstall orchestrator |
 | `C:\Windows\System32\msiexec.exe` | Windows Installer (only during the install window) |
@@ -126,10 +128,14 @@ C:\ProgramData\InvenzoAgent\logs\
 
 ```
 C:\ProgramData\InvenzoAgent\invenzo-agent.exe
+C:\ProgramData\InvenzoAgent\invenzo-agent-windows-amd64.exe
+C:\ProgramData\InvenzoAgent\invenzo-agent-sessionhost-windows-amd64.exe
 C:\ProgramData\InvenzoAgent\install.bat
 C:\ProgramData\InvenzoAgent\uninstall.bat
 C:\Windows\System32\msiexec.exe
 ```
+
+> The standard and sessionhost binaries both end up at `invenzo-agent.exe` after install. The `-windows-amd64.exe` / `-sessionhost-windows-amd64.exe` entries cover the brief window during push-deploy when the binary is staged under its wire filename before being renamed. Include both to avoid a race between the copy step and the behavior-detection scanner.
 
 ### Files to exclude (by name — for MSI temp extraction + push-deploy staging)
 
@@ -165,13 +171,21 @@ This is the same pattern malware droppers use, which is why the heuristic is sen
 3. Wait ~5 minutes for endpoints to pull the updated policy (check **Client Status** in the console to confirm the policy version has reached each endpoint).
 4. Ask the Invenzo administrator to retry the agent install on one endpoint as a test before full rollout.
 
-### (Optional) Submit as false positive to Quick Heal
+### (Optional) Submit as false positive to Quick Heal / Seqrite
 
-To get a permanent global whitelist for this binary so future Invenzo releases don't need re-whitelisting:
+To get a permanent global whitelist for this binary so future Invenzo releases don't need re-whitelisting, open a false-positive ticket with Quick Heal / Seqrite support. Two channels — either works:
 
-- Upload `invenzo-agent-windows-amd64.exe` and `invenzo-agent-setup.msi` to **https://submit.quickheal.com/**
-- Category: **False Positive**
-- Ask the Invenzo admin for the current release's SHA256 hash to include in the submission.
+- **Email**: `virus_submit@quickheal.com` — attach the binary as a password-protected ZIP (password: `infected`) and include the subject line `False Positive — Invenzo Agent`.
+- **Web**: Seqrite support portal at **https://www.seqrite.com/seqrite-support** → **Submit a Ticket** → category **False Positive / Whitelisting request**.
+
+In the ticket / email, include:
+- Attached files: `invenzo-agent-windows-amd64.exe`, `invenzo-agent-sessionhost-windows-amd64.exe`, `invenzo-agent-setup.msi` (ZIP them with password `infected` so they aren't blocked in transit)
+- SHA256 hashes of each file (the Invenzo administrator can provide these — see the [SHA256 hashes section](#for-the-invenzo-administrator) below)
+- Product: **Invenzo ITAM Agent** (commercial, self-hosted IT Asset Management software)
+- Behaviour Detection signature flagged: **944** (or whichever signature ID the console shows)
+- Confirmation that the binary is Go-compiled, not packed/obfuscated
+
+The web URLs for Quick Heal / Seqrite support have changed across product generations — if any of the above links are dead, the Quick Heal main support page at **https://www.quickheal.co.in/support** is the durable entry point; navigate from there to **Submit a Sample** or the equivalent form.
 
 ---
 
@@ -196,6 +210,8 @@ C:\ProgramData\InvenzoAgent\logs
 **Process Exclusions** — add these entries (value column = `0` for each):
 ```
 invenzo-agent.exe
+invenzo-agent-windows-amd64.exe
+invenzo-agent-sessionhost-windows-amd64.exe
 install.bat
 uninstall.bat
 msiexec.exe
@@ -220,7 +236,7 @@ Run as Administrator on the target endpoint:
 ```powershell
 Add-MpPreference -ExclusionPath 'C:\ProgramData\InvenzoAgent'
 Add-MpPreference -ExclusionPath 'C:\ProgramData\InvenzoAgent\logs'
-Add-MpPreference -ExclusionProcess 'invenzo-agent.exe','install.bat','uninstall.bat','msiexec.exe'
+Add-MpPreference -ExclusionProcess 'invenzo-agent.exe','invenzo-agent-windows-amd64.exe','invenzo-agent-sessionhost-windows-amd64.exe','install.bat','uninstall.bat','msiexec.exe'
 
 # Verify exclusions are applied:
 Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
