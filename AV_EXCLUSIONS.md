@@ -71,13 +71,16 @@ Apply all of the following on every Windows endpoint that will receive the Inven
 | `C:\ProgramData\InvenzoAgent\uninstall.bat` | Uninstall orchestrator |
 | `C:\Windows\System32\msiexec.exe` | Windows Installer (only during the install window) |
 
-### 3. File-name exclusions (for MSI-extracted temp copies)
+### 3. File-name exclusions (for MSI-extracted temp copies + push-deploy staging)
 
 | File | Purpose |
 |---|---|
 | `invenzo-agent-setup.msi` | The installer package (extracted to `%TEMP%` during install) |
 | `invenzo-agent.exe` | The agent binary (may be scanned in `%TEMP%` during MSI extraction) |
+| `invenzo-agent-windows-amd64.exe` | **Standard agent** — wire filename during push-deploy (SMB staging) before rename to `invenzo-agent.exe` |
+| `invenzo-agent-sessionhost-windows-amd64.exe` | **Session Host agent** — wire filename pushed to VDI host servers (vSpace / RDS / Citrix / Horizon). No MSI — binary is copied directly over SMB / SSH. |
 | `install.bat` | Install script |
+| `uninstall.bat` | Uninstall script |
 
 ### 4. Service exclusion
 
@@ -128,13 +131,18 @@ C:\ProgramData\InvenzoAgent\uninstall.bat
 C:\Windows\System32\msiexec.exe
 ```
 
-### Files to exclude (by name — for MSI temp extraction)
+### Files to exclude (by name — for MSI temp extraction + push-deploy staging)
 
 ```
 invenzo-agent-setup.msi
 invenzo-agent.exe
+invenzo-agent-windows-amd64.exe
+invenzo-agent-sessionhost-windows-amd64.exe
 install.bat
+uninstall.bat
 ```
+
+> `invenzo-agent-sessionhost-windows-amd64.exe` is the **Session Host agent variant** — pushed directly (no MSI) to VDI host servers running NComputing vSpace / Microsoft RDS / Citrix / VMware Horizon so they can enumerate connected thin-client sessions. Same install path + same service as the standard agent, but the wire filename during SMB/SSH push-deploy is different and needs to be excluded separately.
 
 ### Network / firewall
 
