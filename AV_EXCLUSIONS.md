@@ -97,35 +97,158 @@ The agent never makes outbound connections to any other destination. All traffic
 
 ## Vendor-specific steps
 
-### Seqrite Endpoint Protection (Quick Heal)
+---
 
-1. Log in to the **Seqrite EPP Server Console**.
-2. Navigate: **Clients → Manage Policies → [Your policy] → Edit**.
-3. Under **Advanced DNAScan**, click **Exclude Files & Folders** — add the folder and process paths from sections 1–3.
-4. Under **Behavior Detection System**, click **Exclusions** — add the process paths from section 2. This is the component that fires signature **944**.
-5. Save the policy and push it to all client groups that will receive the Invenzo agent.
-6. Wait ~5 minutes for clients to pull the updated policy, then retry the agent install.
+## 🛡️ Hand-off: Seqrite Endpoint Protection (Quick Heal)
 
-**Optional — submit the binary as a false positive** so future release builds don't need re-whitelisting:
-- Upload `invenzo-agent-windows-amd64.exe` and `invenzo-agent-setup.msi` to https://submit.quickheal.com/ as category "False Positive".
+**For the Seqrite administrator — this section is self-contained, you don't need to read the rest of the document.**
 
-### Microsoft Defender Antivirus
+### Where to add the exception
 
-**Via Group Policy**:
-- `Computer Configuration → Administrative Templates → Windows Components → Microsoft Defender Antivirus → Exclusions`
-- Enable: **Path Exclusions**, **Process Exclusions**, **Extension Exclusions** — add entries from sections 1–3.
+**Seqrite EPP Server Console → Clients → Manage Policies → [Your Policy] → Edit**
 
-**Via Intune**:
-- `Endpoint security → Antivirus → Create Policy → Platform: Windows 10+ → Profile: Windows Security Experience`
-- Alternatively use **Defender exclusions** profile.
+Add the entries below in **two** places inside the policy (both are required — one stops real-time scan from quarantining the binary, the other stops behavior-detection from flagging the install):
 
-**Via PowerShell (local/single machine test)**:
-```powershell
-Add-MpPreference -ExclusionPath 'C:\ProgramData\InvenzoAgent'
-Add-MpPreference -ExclusionProcess 'invenzo-agent.exe','install.bat','msiexec.exe'
+1. **Advanced DNAScan → Exclude Files & Folders**
+2. **Behavior Detection System → Exclusions** ← this is what fires signature **944**
+
+### Folders to exclude
+
+```
+C:\ProgramData\InvenzoAgent\
+C:\ProgramData\InvenzoAgent\logs\
 ```
 
-**Submit false positive**: https://www.microsoft.com/wdsi/filesubmission
+### Processes to exclude
+
+```
+C:\ProgramData\InvenzoAgent\invenzo-agent.exe
+C:\ProgramData\InvenzoAgent\install.bat
+C:\ProgramData\InvenzoAgent\uninstall.bat
+C:\Windows\System32\msiexec.exe
+```
+
+### Files to exclude (by name — for MSI temp extraction)
+
+```
+invenzo-agent-setup.msi
+invenzo-agent.exe
+install.bat
+```
+
+### Network / firewall
+
+Allow outbound **HTTPS (port 443)** from endpoints to the Invenzo server URL (the IT team running Invenzo will give you this — e.g. `invenzo.company.com`). No other outbound destinations are needed.
+
+### Why Seqrite flags it
+
+Seqrite's **Behavior Detection System signature 944** is a heuristic rule that fires when `NT AUTHORITY\SYSTEM` spawns this process chain:
+
+```
+powershell.exe  →  cmd.exe  →  install.bat  →  invenzo-agent.exe install-service
+```
+
+This is the same pattern malware droppers use, which is why the heuristic is sensitive — but it's not matching a signature on the Invenzo binary. It's matching the **install behavior**. The exclusions above tell Seqrite to skip the heuristic for these specific files only; everything else on the endpoint remains fully protected.
+
+### Deploy the policy
+
+1. Save the policy in the EPP console.
+2. Push / apply to all client groups that will receive the Invenzo agent.
+3. Wait ~5 minutes for endpoints to pull the updated policy (check **Client Status** in the console to confirm the policy version has reached each endpoint).
+4. Ask the Invenzo administrator to retry the agent install on one endpoint as a test before full rollout.
+
+### (Optional) Submit as false positive to Quick Heal
+
+To get a permanent global whitelist for this binary so future Invenzo releases don't need re-whitelisting:
+
+- Upload `invenzo-agent-windows-amd64.exe` and `invenzo-agent-setup.msi` to **https://submit.quickheal.com/**
+- Category: **False Positive**
+- Ask the Invenzo admin for the current release's SHA256 hash to include in the submission.
+
+---
+
+## 🛡️ Hand-off: Microsoft Defender Antivirus
+
+**For the Defender / Intune / Group Policy administrator — this section is self-contained.**
+
+Pick the deployment method that matches your environment:
+
+### Option A — Group Policy (AD-joined machines)
+
+1. Open **Group Policy Management Editor** → select the GPO applied to your endpoint OU.
+2. Navigate: **Computer Configuration → Administrative Templates → Windows Components → Microsoft Defender Antivirus → Exclusions**.
+3. Enable and populate each of the three exclusion policies:
+
+**Path Exclusions** — add these entries (value column = `0` for each):
+```
+C:\ProgramData\InvenzoAgent
+C:\ProgramData\InvenzoAgent\logs
+```
+
+**Process Exclusions** — add these entries (value column = `0` for each):
+```
+invenzo-agent.exe
+install.bat
+uninstall.bat
+msiexec.exe
+```
+
+**Extension Exclusions** — not required (leave alone).
+
+4. Run `gpupdate /force` on one target endpoint to pull the policy immediately, then retry the agent install as a test.
+
+### Option B — Microsoft Intune (MDM-managed machines)
+
+1. **Microsoft Intune admin center → Endpoint security → Antivirus → Create Policy**.
+2. Platform: **Windows 10 and later** → Profile: **Microsoft Defender Antivirus Exclusions**.
+3. Add the same values as the Group Policy option above under **Defender Processes to exclude** and **Paths to exclude**.
+4. Assign the profile to the device group that will receive the Invenzo agent.
+5. On a test endpoint, run `Company Portal app → Sync` (or wait ~8 hours for automatic sync), then retry the install.
+
+### Option C — PowerShell (single-machine test / ad-hoc)
+
+Run as Administrator on the target endpoint:
+
+```powershell
+Add-MpPreference -ExclusionPath 'C:\ProgramData\InvenzoAgent'
+Add-MpPreference -ExclusionPath 'C:\ProgramData\InvenzoAgent\logs'
+Add-MpPreference -ExclusionProcess 'invenzo-agent.exe','install.bat','uninstall.bat','msiexec.exe'
+
+# Verify exclusions are applied:
+Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
+Get-MpPreference | Select-Object -ExpandProperty ExclusionProcess
+```
+
+Note: local PowerShell exclusions are **overridden by Group Policy / Intune** if those are also in effect — for production rollout use Option A or B, not this.
+
+### Option D — Microsoft Defender for Endpoint (EDR — separate from Defender AV)
+
+If MDE is active (visible in **security.microsoft.com**):
+
+1. **Endpoints → Configuration management → Endpoint security policies → Attack surface reduction rules**.
+2. Add **File / folder exclusions** for the paths above.
+3. Under **Device groups**, ensure the policy applies to endpoints receiving Invenzo.
+
+### Network / firewall
+
+Allow outbound **HTTPS (443)** to the Invenzo server URL. If Defender SmartScreen is active, add the URL to the trusted sites list in **Windows Security → App & browser control → Reputation-based protection settings**.
+
+### Why Defender flags it
+
+Unsigned binaries executing a `LocalSystem → cmd → powershell → service-install` chain match Defender's generic **Behavior:Win32/Generic** heuristic. Defender also shows a SmartScreen warning on first execution of any unsigned binary. The exclusions above disable both for the Invenzo install paths specifically. If the Invenzo team code-signs the binary in a future release (with a valid Authenticode certificate), these exclusions are no longer required — Defender auto-trusts signed binaries with established reputation.
+
+### Submit false positive to Microsoft
+
+For permanent global whitelisting so all your endpoints stop flagging future releases:
+- https://www.microsoft.com/wdsi/filesubmission
+- Submission type: **Software developer**
+- Select **Incorrect detection** and upload both `invenzo-agent-windows-amd64.exe` and `invenzo-agent-setup.msi`.
+
+---
+
+## Other AV / EDR vendors
+
+The sections below are condensed — the folder / process / file exclusion values are the same as listed in [Full exclusion list](#full-exclusion-list) above; only the console navigation differs.
 
 ### CrowdStrike Falcon
 
