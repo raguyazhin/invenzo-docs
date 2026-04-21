@@ -35,6 +35,21 @@ Adding the exclusions below silences these heuristics for the specific Invenzo i
 
 ---
 
+## Which agent variant am I whitelisting?
+
+Invenzo ships two agent variants. Both install to the **same path** (`C:\ProgramData\InvenzoAgent\`) and run as the **same service** (`InvenzoAgent`) — so **the exclusion list below works for both**. The only difference is the binary filename you'll see on the wire during push-deploy, and the SHA256 hash.
+
+| Variant | Installs on | Binary filename (before install) | Purpose |
+|---|---|---|---|
+| **Standard agent** | Regular endpoints — laptops, desktops, servers, VMs | `invenzo-agent-windows-amd64.exe` | Hardware / software / security inventory |
+| **Session Host agent** | VDI host servers only — NComputing vSpace, Microsoft RDS, Citrix XenApp / Virtual Apps, VMware Horizon | `invenzo-agent-sessionhost-windows-amd64.exe` | Everything the standard agent does **plus** enumerates active VDI sessions and reports connected thin clients as child assets |
+
+**Thin clients themselves do NOT run an Invenzo agent.** They have no local inventory collector. Their existence is discovered indirectly by the Session Host agent on the VDI host they connect to. So no AV exclusions are required on thin-client devices — only on the VDI host servers.
+
+Once either variant is installed, the on-disk binary path is always `C:\ProgramData\InvenzoAgent\invenzo-agent.exe`. The exclusions in the next section cover both.
+
+---
+
 ## Full exclusion list
 
 Apply all of the following on every Windows endpoint that will receive the Invenzo agent.
