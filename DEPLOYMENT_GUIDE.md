@@ -41,13 +41,15 @@ Customers **never** need access to the private source repo — they pull pre-bui
 git clone https://github.com/raguyazhin/Invenzo.git d:/Invenzo
 cd d:/Invenzo
 
-# 2. Bootstrap .env (generates random secrets, prompts for admin password)
+# 2. Bootstrap: generates age keypair (./.age-key), encrypts 8 secrets
+#    to ./secrets/*.enc, writes .env with non-secret config only
 bash bootstrap-dev.sh
 
 # 3. Build and start the full stack (3-8 minutes first time)
+#    Each service decrypts its own secrets into /dev/shm at container boot
 docker compose up -d --build
 
-# 4. Open https://localhost, accept TLS warning, log in as admin
+# 4. Open http://localhost:3080, log in as admin
 ```
 
 **Verify**: `docker compose ps` — all services should show `Up (healthy)`.
@@ -157,13 +159,27 @@ sudo bash update.sh 1.8.3
 6. Starts services → API auto-applies Alembic migrations
 7. Health check
 
-**Your `.env` secrets are never touched**:
+**Your secrets and keys are never touched**:
 
-| Setting | Modified by `update.sh`? |
+| Artifact | Modified by `update.sh`? |
 |---|---|
-| `VERSION=` | ✅ Yes |
-| `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `SECRET_KEY`, `VAULT_KEY`, `VAULT_ROOT_TOKEN`, `FIRST_ADMIN_PASSWORD`, `GRAFANA_ADMIN_PASSWORD` | ❌ Never |
-| Custom config | ❌ Never |
+| `.env` `VERSION=` line | ✅ Yes |
+| `.env` non-secret config (REGISTRY, ALLOWED_HOST, ports, AGE_KEY_FILE, …) | ❌ Never |
+| `./secrets/*.enc` (age-encrypted secret values) | ❌ Never |
+| `/etc/invenzo/age.key` (master private key) | ❌ Never |
+| `./secrets/` file permissions (mode 400, root:root) | ❌ Never |
+
+**Encrypted-secrets mode (v1.10+):** secrets live as age-encrypted `.enc`
+files in `./secrets/` — not as plaintext in `.env`. `update.sh` swaps the
+Docker image version but leaves secret blobs, the age private key, and
+all non-secret `.env` config alone. See
+[SECRETS.md](SECRETS.md) for the full architecture.
+
+**Upgrading from an older install still using plaintext `.env` secrets?**
+Run the one-shot migration block at the top of
+[UPGRADE.md](https://github.com/raguyazhin/invenzo-package/blob/main/UPGRADE.md)
+BEFORE `update.sh`. It converts each `.env` secret to `./secrets/*.enc`
+and generates the age keypair at `/etc/invenzo/age.key`.
 
 ### Post-upgrade verification
 
