@@ -59,7 +59,7 @@ Open `https://<your-hostname>` in a browser after 5-10 minutes. Full details: [C
 
 ```bash
 cd /opt/invenzo
-sudo bash update.sh 1.8.3
+sudo bash update.sh 1.9.2
 ```
 
 Your `.env` secrets stay untouched — only the `VERSION=` line is updated. Full details: [UPGRADE.md](https://github.com/raguyazhin/invenzo-package/blob/main/UPGRADE.md)
@@ -114,13 +114,22 @@ Full details: [Developer Setup](DEPLOYMENT_GUIDE.md#a-developer--first-install)
 
 ## Latest release
 
-**v1.8.3** — Printer MIB / SNMP enhancements.
+**v1.9.2** — *2026-04-22* — Plugin read-only mode, asset detail layout overhaul, dashboard simplified.
 
-Docker Hub images (pull with `docker pull raguyazhin/<name>:1.8.3`):
+Docker Hub images (pull with `docker pull raguyazhin/<name>:1.9.2`):
 
 - [`raguyazhin/invenzo-api`](https://hub.docker.com/r/raguyazhin/invenzo-api)
 - [`raguyazhin/invenzo-discovery`](https://hub.docker.com/r/raguyazhin/invenzo-discovery)
 - [`raguyazhin/invenzo-ui`](https://hub.docker.com/r/raguyazhin/invenzo-ui)
+
+### What's new in 1.9.2
+
+- **Plugin read-only mode** — pausing or losing the license on a plugin no longer locks you out of historical data. Every plugin-gated page (Cost Center, Contracts, Procurement, Budgets, Warranty, Change Management, Compliance, SAM) shows a clear banner, keeps existing records readable, and hides Create/Edit/Delete buttons. Re-enabling instantly restores writes.
+- **Asset detail overhaul** — every tab (Software, History, Tasks, Assignments, Contracts, Properties, Location, Connections) now fills the full screen width with a single scrollbar. No floating cards, no hidden columns, no double-scroll.
+- **Dashboard simplified** — customize widgets / edit-layout removed. View-only with time-range pills + Export.
+- **Bug fixes** — budget-save date coercion, hero stats divider full-width, *Link Existing Asset* search icon/placeholder collision.
+
+No manual migration required — `update.sh` pulls 1.9.2 images and Alembic applies schema on API startup.
 
 ---
 
@@ -128,8 +137,8 @@ Docker Hub images (pull with `docker pull raguyazhin/<name>:1.8.3`):
 
 Open **Settings → Version & Schema** in the UI. It shows:
 
-- Application version (e.g. `1.8.3`)
-- DB schema version (e.g. `0055`)
+- Application version (e.g. `1.9.2`)
+- DB schema version (e.g. `0069`)
 - Sync status: ✅ In Sync / ⚠️ Migration Pending / ❓ Unknown
 - Full migration history
 - **Compare** widget to verify a customer/staging install against your local
@@ -164,5 +173,5 @@ No SSH, no SQL, no guessing.
 ---
 
 <p style="text-align:center;color:#888;font-size:12px;margin-top:40px">
-  Invenzo ITAM v1.8.3 · Self-hosted IT Asset Management · Commercial License
+  Invenzo ITAM v1.9.2 · Self-hosted IT Asset Management · Commercial License
 </p>
