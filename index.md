@@ -9,6 +9,8 @@ description: Self-hosted IT Asset Management
 **Self-hosted IT Asset Management platform.**
 Network discovery · Asset inventory · Software asset management · Compliance · Agent deployment · Change management.
 
+<small>© <a href="https://mitvaris.com">Mitvaris</a>. All rights reserved.</small>
+
 <p>
   <a href="DEPLOYMENT_GUIDE.md" style="background:#1FCC7A;color:white;padding:10px 20px;text-decoration:none;border-radius:6px;font-weight:500;display:inline-block;margin-right:8px;">📖 Full Deployment Guide</a>
   <a href="https://github.com/raguyazhin/invenzo-package" style="background:#333;color:white;padding:10px 20px;text-decoration:none;border-radius:6px;font-weight:500;display:inline-block;">📦 Install Package</a>
