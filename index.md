@@ -177,6 +177,7 @@ No SSH, no SQL, no guessing.
 | 🔒 Source code (private) | [github.com/raguyazhin/Invenzo](https://github.com/raguyazhin/Invenzo) |
 | 📖 Full deployment guide | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) |
 | 🔐 Secrets: storage, install flow, runtime, recovery | [SECRETS.md](SECRETS.md) |
+| 🔑 SSO setup: Google · Azure AD · Okta · OIDC · SAML · LDAP | [SSO.md](SSO.md) |
 | 🛡️ AV / EDR exclusions (hand to customer's AV admin) | [AV_EXCLUSIONS.md](AV_EXCLUSIONS.md) |
 | 🎨 UI design reference | [UI_DESIGN_GUIDE.md](UI_DESIGN_GUIDE.md) |
 | 🐳 Docker Hub | [hub.docker.com/u/raguyazhin](https://hub.docker.com/u/raguyazhin) |
