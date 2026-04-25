@@ -27,7 +27,7 @@ Invenzo uses two GitHub repositories to keep source code protected while making 
 | 📦 **invenzo-package** | [github.com/raguyazhin/invenzo-package](https://github.com/raguyazhin/invenzo-package) | 🌐 Public | Customers installing / upgrading | `install.sh`, `update.sh`, `docker-compose.yml`, Caddyfile — **no source code**. Pulls pre-built Docker images from Docker Hub. |
 | 🔒 **Invenzo** | [github.com/raguyazhin/Invenzo](https://github.com/raguyazhin/Invenzo) | 🔐 Private | Developers (you) | Full source code for API, UI, discovery engine, Go agent. Licensed commercial software. |
 
-**Customers never see source code.** They just run `install.sh` from the public `invenzo-package` repo, which pulls compiled Docker images (`raguyazhin/invenzo-api`, `-discovery`, `-ui`) from Docker Hub. Python source is Cython-compiled to `.so` binaries in the production images.
+**Customers receive bytecode-only images.** `install.sh` from the public `invenzo-package` repo pulls pre-built Docker images (`raguyazhin/invenzo-api`, `-discovery`, `-ui`) from Docker Hub. The production images contain `.pyc` bytecode (compiled from `.py` via `python -m compileall`, with raw `.py` source stripped), minified UI bundles, and static Go binaries. Bytecode is a casual-browsing deterrent — the primary IP-protection layer is the commercial license agreement plus Ed25519-signed module licenses.
 
 ---
 

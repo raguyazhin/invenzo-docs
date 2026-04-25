@@ -14,7 +14,7 @@ Everything you need to install, update, or develop Invenzo — on any machine.
 | 🔒 **Source code** | `Invenzo` (private) | https://github.com/raguyazhin/Invenzo | Developers |
 | 📖 **Documentation** | `invenzo-docs` (public, GitHub Pages) | https://raguyazhin.github.io/invenzo-docs/ | Everyone |
 
-Customers **never** need access to the private source repo — they pull pre-built, Cython-compiled Docker images directly from Docker Hub (`raguyazhin/invenzo-api`, `-discovery`, `-ui`).
+Customers **never** need access to the private source repo — they pull pre-built, bytecode-only Docker images directly from Docker Hub (`raguyazhin/invenzo-api`, `-discovery`, `-ui`). The Python containers ship `.pyc` bytecode only; UI ships a minified JS bundle; the agent ships a static Go binary.
 
 ---
 
